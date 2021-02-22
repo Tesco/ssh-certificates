@@ -1,0 +1,82 @@
+import static org.gradle.api.tasks.testing.logging.TestLogEvent.*
+
+plugins {
+    id "java-library"
+    id "io.freefair.lombok" version "5.3.0"
+}
+
+gradle.startParameter.showStacktrace = ShowStacktrace.ALWAYS_FULL
+
+version = "1.5.${Instant.now().epochSecond.toString()}+${gitHash}"
+group = 'com.tesco.crypt'
+sourceCompatibility = JavaVersion.VERSION_11
+targetCompatibility = JavaVersion.VERSION_11
+
+println "\n\n\n\n==================================================================================="
+println "== CREATING ARTIFACT: ${group}:${name}:${version} =="
+println "===================================================================================\n\n\n\n"
+
+repositories {
+    mavenCentral()
+    jcenter()
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+}
+
+def junitVersion = "5.7.0"
+dependencies {
+    // apache commons
+    testImplementation "commons-io:commons-io:2.7"
+    testImplementation "org.apache.commons:commons-lang3:3.11"
+    testImplementation "org.apache.commons:commons-text:1.9"
+
+    // unit testing
+    testImplementation "commons-codec:commons-codec:1.15"
+    testImplementation "org.hamcrest:hamcrest:2.+"
+    testImplementation "org.mockito:mockito-core:3.6.+"
+    testImplementation "org.mock-server:mockserver-netty:5.11.0"
+    testCompile "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
+    testCompile "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
+    testCompile "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
+}
+
+compileJava {
+    options.compilerArgs += [
+            '-Xlint:unchecked',
+            '-Xlint:deprecation',
+            '-Xlint:-requires-transitive-automatic',
+            '-Werror',
+            '--add-exports', "java.base/sun.security.util=ALL-UNNAMED",
+    ]
+}
+
+compileTestJava {
+    options.compilerArgs += [
+            '-Xlint:unchecked',
+            '-Xlint:deprecation',
+            '-Xlint:-requires-transitive-automatic',
+            '-Werror',
+            '--add-exports', "java.base/sun.security.util=ALL-UNNAMED",
+    ]
+}
+
+test {
+    maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
+    systemProperties['junit.jupiter.execution.parallel.enabled'] = true
+    useJUnitPlatform {
+        includeTags 'UnitTest'
+        failFast = false
+    }
+    reports {
+        junitXml.enabled = true
+        html.enabled = true
+    }
+    testLogging {
+        events STARTED, PASSED, SKIPPED, FAILED, STANDARD_OUT, STANDARD_ERROR
+        showStandardStreams = true
+        exceptionFormat = 'full'
+    }
+}
+
+java {
+    withSourcesJar()
+}
